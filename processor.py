@@ -104,4 +104,11 @@ else:
         with open(os.path.join(docs_dir, "conf.py"), 'w') as f:
             f.write(conf_template.render(data))
         os.chdir(docs_dir)
-        sphinx.main(["", ".", "../.build"])
+
+        locales = get_field("locales", conf[project], [], auto_list)
+        print("Generating documentation for the main locale: {}".format(locales[0]))
+        sphinx.main(["", ".", os.path.join("..", ".build", locales[0])])
+
+        for locale in locales[1:]:
+            print("Generating documentation for the locale: {}".format(locale))
+            sphinx.main(["", ".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])
