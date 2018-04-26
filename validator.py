@@ -6,11 +6,6 @@ import yaml
 from functools import reduce
 import operator
 
-required_project_fields = ["subs"]
-warning_project_fields = ["author", "copyright", "release", "version"]
-required_sub_fields = ["docs"]
-warning_sub_fields = ["plus"]
-
 def _(*types):
     return lambda x: isinstance(x, types)
 
