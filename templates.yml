@@ -6,3 +6,10 @@ js:
     extensions: sphinx_js
   expr_lists:
     js_source_path: "{i[0] for i in os.walk(os.path.join('..', {{ source_path }})) if all(j[0] != '.' for j in i[0].split(os.sep)[1:])}"
+
+python:
+  import: os
+  lists:
+    extensions: sphinx.ext.autodoc
+  expr_lists:
+    search_paths: "{os.path.join('..', {{ source_path }})}"

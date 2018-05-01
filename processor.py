@@ -18,14 +18,14 @@ def get_field(field, dict, default = "", transform = lambda x: x):
     return transform(dict[field]) if field in dict else default
 
 def auto_list(arg):
-    if isinstance(arg, str):
+    if not isinstance(arg, list):
         return [arg]
     return arg
 
 def hash(str):
     return hashlib.md5(str.encode("utf8")).hexdigest()
 
-def get_resource(dict, path):
+def get_resources(dict, path):
     global remote
     dir_util.mkpath(path)
     if "from" in dict:
@@ -35,14 +35,17 @@ def get_resource(dict, path):
         print("Done.")
     else:
         temp_path = "."
-    plus = get_field("plus", dict, [], auto_list)
-    minus = get_field("minus", dict, [], auto_list)
-    for match in set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in plus]).difference(set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in minus])):
-        print("Copying {} to {}".format(match, path))
-        if os.path.isfile(match):
-            file_util.copy_file(match, path)
-        else:
-            dir_util.copy_tree(match, os.path.join(path, os.path.split(match)[-1]))
+    for group in get_field("files", dict, [], auto_list):
+        destination = get_field("to", group, ".")
+        plus = get_field("plus", group, [], auto_list)
+        minus = get_field("minus", group, [], auto_list)
+        for match in set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in plus]).difference(set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in minus])):
+            dest = os.path.join(path, destination)
+            print("Copying {} to {}".format(match, dest))
+            if os.path.isfile(match):
+                file_util.copy_file(match, dest)
+            else:
+                dir_util.copy_tree(match, os.path.join(dest, os.path.split(match)[-1]))
 
 def merge_fields(a, b, f):
     return dict(list(a.items()) + list(b.items()) + [(k, f(a[k], b[k])) for k in set(a) & set(b)])
@@ -89,14 +92,18 @@ else:
         data = {"project": project, "version": get_field("version", conf[project]), "release": get_field("release", conf[project]), "authors": get_field("authors", conf[project]), "copyright": get_field("copyright", conf[project])}
         data = {i:repr(j) for (i,j) in data.items()}
 
-        get_resource(conf[project]["docs"], docs_dir)
+        get_resources(conf[project]["docs"], docs_dir)
 
         for section in conf[project]["code"]:
             print("|-* Section {} found".format(section))
             temp = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
-            get_resource(conf[project]["code"][section], os.path.join(project_dir, temp))
+            get_resources(conf[project]["code"][section], os.path.join(project_dir, temp))
             for i in get_field("templates", conf[project]["code"][section], [], auto_list):
-                merge_confs(project_conf, yaml.load(templates_template.render({"source_path": repr(temp)}))[i])
+                rendered_conf = yaml.load(templates_template.render({"source_path": repr(temp)}))
+                if i not in rendered_conf:
+                    print("ERROR: Template {} not found".format(i))
+                    sys.exit(1)
+                merge_confs(project_conf, rendered_conf[i])
         data["imports"] = "import {}".format(", ".join(project_conf["import"])) if project_conf["import"] else ""
         data["vars"] = data_dump(project_conf["vars"], repr)
         data["expr_lists"] = data_dump(project_conf["expr_lists"], lambda x: "list({})".format(x))
