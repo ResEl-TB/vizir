@@ -10,7 +10,7 @@ import string
 from jinja2 import Environment, FileSystemLoader
 from git import Repo
 import hashlib
-import sphinx
+import sphinx.cmd.build as build
 
 remote = "ssh://git.resel.fr:43000/{}"
 
@@ -89,17 +89,17 @@ else:
         docs_dir = os.path.join(project_dir, ".docs")
         os.makedirs(docs_dir)
 
-        data = {"project": project, "version": get_field("version", conf[project]), "release": get_field("release", conf[project]), "authors": get_field("authors", conf[project]), "copyright": get_field("copyright", conf[project])}
+        version = get_field("version", conf[project])
+        data = {"project": project, "version": version, "release": get_field("release", conf[project], version), "copyright": get_field("copyright", conf[project])}
         data = {i:repr(j) for (i,j) in data.items()}
 
         get_resources(conf[project]["docs"], docs_dir)
 
         for section in conf[project]["code"]:
             print("|-* Section {} found".format(section))
-            temp = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
-            get_resources(conf[project]["code"][section], os.path.join(project_dir, temp))
+            get_resources(conf[project]["code"][section], os.path.join(project_dir, section))
             for i in get_field("templates", conf[project]["code"][section], [], auto_list):
-                rendered_conf = yaml.load(templates_template.render({"source_path": repr(temp)}))
+                rendered_conf = yaml.load(templates_template.render({"source_path": repr(section)}))
                 if i not in rendered_conf:
                     print("ERROR: Template {} not found".format(i))
                     sys.exit(1)
@@ -114,8 +114,8 @@ else:
 
         locales = get_field("locales", conf[project], [], auto_list)
         print("Generating documentation for the main locale: {}".format(locales[0]))
-        sphinx.main(["", ".", os.path.join("..", ".build", locales[0])])
+        build.main([".", os.path.join("..", ".build", locales[0])])
 
         for locale in locales[1:]:
             print("Generating documentation for the locale: {}".format(locale))
-            sphinx.main(["", ".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])
+            build.main([".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])

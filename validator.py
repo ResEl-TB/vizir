@@ -11,9 +11,8 @@ files_policy = {"_error": {"@", "plus", "to"},
                "plus": [is_str],
                "to": is_str}
 
-policies = {"*": {"_error": {"@", "docs", "locales"},
-                  "_warning": {"authors", "code", "copyright", "release", "version"},
-                  "authors": is_str, # no list?
+policies = {"*": {"_error": {"@", "docs", "locales", "version"},
+                  "_warning": {"code", "copyright", "release"},
                   "code": {"*": {"_error": {"@"},
                                  "_warning": {"templates"},
                                  "files": [files_policy],
