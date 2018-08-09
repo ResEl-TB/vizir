@@ -39,7 +39,7 @@ def get_resources(dict, path):
         destination = get_field("to", group, ".")
         plus = get_field("plus", group, [], auto_list)
         minus = get_field("minus", group, [], auto_list)
-        for match in set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in plus]).difference(set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in minus])):
+        for match in set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in plus]).difference(set().union(*[glob.glob(os.path.join(temp_path, rule)) for rule in minus])).difference({".docs"}):
             dest = os.path.join(path, destination)
             print("Copying {} to {}".format(match, dest))
             if os.path.isfile(match):
@@ -67,25 +67,22 @@ def merge_confs(main_conf, new_conf):
 def data_dump(dict, f = lambda x: x):
     return '\n'.join("{}={}".format(i, f(j)) for (i, j) in dict.items())
 
-print("ResEl Documentation Processor\n-----------------------------")
+def process(directory="."):
+    print("ResEl Documentation Processor\n-----------------------------")
 
-if len(sys.argv) != 2:
-    print("Usage: python3 processor.py <directory>")
-    sys.exit(1)
+    try:
+        conf = yaml.load(open(os.path.join(directory, ".docs.yml"), 'r'))
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
-try:
-    conf = yaml.load(open(os.path.join(sys.argv[1], ".docs.yml"), 'r'))
-except Exception as e:
-    print(e)
-    sys.exit(1)
-else:
-    env = Environment(loader=FileSystemLoader('.'))
+    env = Environment(loader=FileSystemLoader(os.path.dirname(os.path.realpath(__file__))))
     conf_template = env.get_template('conf.py')
     templates_template = env.get_template('templates.yml')
     for project in conf:
         print("* Project {} found".format(project))
         project_conf = {"import": set(), "vars": {}, "lists": {}, "expr_lists": {}}
-        project_dir = os.path.join("doku", project)
+        project_dir = os.path.join(".docs", project)
         docs_dir = os.path.join(project_dir, ".docs")
         os.makedirs(docs_dir)
 

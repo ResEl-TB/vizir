@@ -3,8 +3,8 @@
 import sys
 import os
 import yaml
-from yava.validator import validate
-from yava.primitives import *
+from .yava.validator import validate as _validate
+from .yava.primitives import *
 
 files_policy = {"_error": {"@", "plus", "to"},
                "minus": [is_str],
@@ -26,16 +26,13 @@ policies = {"*": {"_error": {"@", "docs", "locales", "version"},
                   "release": is_str,
                   "version": is_str}}
 
-if len(sys.argv) != 2:
-    print("Usage: python3 validator.py <directory>")
-    sys.exit(1)
+def validate(directory="."):
+    try:
+        conf = yaml.load(open(os.path.join(directory, ".docs.yml"), 'r'))
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
-try:
-    conf = yaml.load(open(os.path.join(sys.argv[1], ".docs.yml"), 'r'))
-except Exception as e:
-    print(e)
-    sys.exit(1)
-else:
     print("ResEl Documentation Validator\n-----------------------------")
-    validate(conf, policies)
+    _validate(conf, policies)
     print("OK")

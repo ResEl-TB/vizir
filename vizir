@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+
+import os
+from vzr.validator import validate
+from vzr.processor import process
+from git import Repo, Remote
+
+import sys
+
+if len(sys.argv) != 2:
+    print("Usage: vizir <command> [options]")
+    sys.exit(1)
+
+if sys.argv[1] == "validate":
+    validate(*sys.argv[2:])
+elif sys.argv[1] == "process":
+    process(*sys.argv[2:])
+elif sys.argv[1] == "update":
+    print("Updating Vizir")
+    Remote(Repo(os.path.dirname(os.path.realpath(__file__))), "origin").pull()
+else:
+    print("Unrecognized command: {}".format(sys.argv[1]))
+    sys.exit(1)
