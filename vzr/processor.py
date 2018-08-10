@@ -111,8 +111,12 @@ def process(directory="."):
 
         locales = get_field("locales", conf[project], [], auto_list)
         print("Generating documentation for the main locale: {}".format(locales[0]))
-        build.main([".", os.path.join("..", ".build", locales[0])])
+        rc = build.main([".", os.path.join("..", ".build", locales[0])])
+        if rc:
+            sys.exit(rc)
 
         for locale in locales[1:]:
             print("Generating documentation for the locale: {}".format(locale))
-            build.main([".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])
+            rc = build.main([".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])
+            if rc:
+                sys.exit(rc)
