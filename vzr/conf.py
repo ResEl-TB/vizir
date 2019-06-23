@@ -11,6 +11,7 @@ release = {{ release }}
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = "sphinx_rtd_theme"
 locale_dirs = ['locale/']
+extensions = []
 
 search_paths = []
 
@@ -18,4 +19,5 @@ search_paths = []
 {{ expr_lists }}
 {{ lists }}
 
+extensions.append('recommonmark')
 sys.path = search_paths + sys.path

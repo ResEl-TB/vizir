@@ -14,8 +14,8 @@ import sphinx.cmd.build as build
 
 remote = "ssh://git.resel.fr:43000/{}"
 
-def get_field(field, dict, default = "", transform = lambda x: x):
-    return transform(dict[field]) if field in dict else default
+def get_field(field, dic, default = "", transform = lambda x: x):
+    return transform(dic[field]) if field in dic else default
 
 def auto_list(arg):
     if not isinstance(arg, list):
@@ -25,17 +25,17 @@ def auto_list(arg):
 def hash(str):
     return hashlib.md5(str.encode("utf8")).hexdigest()
 
-def get_resources(dict, path):
+def get_resources(dic, path):
     global remote
     dir_util.mkpath(path)
-    if "from" in dict:
-        temp_path = hash(dict["from"])
-        print("Acquiring repo {}...".format(dict["from"]))
-        Repo.clone_from(remote.format(dict["from"]), temp_path)
+    if "from" in dic:
+        temp_path = hash(dic["from"])
+        print("Acquiring repo {}...".format(dic["from"]))
+        Repo.clone_from(remote.format(dic["from"]), temp_path)
         print("Done.")
     else:
         temp_path = "."
-    for group in get_field("files", dict, [], auto_list):
+    for group in get_field("files", dic, [], auto_list):
         destination = get_field("to", group, ".")
         plus = get_field("plus", group, [], auto_list)
         minus = get_field("minus", group, [], auto_list)
@@ -64,8 +64,8 @@ def merge_confs(main_conf, new_conf):
     expr_lists = get_field("expr_lists", new_conf, {})
     main_conf["expr_lists"] = merge_fields(main_conf["expr_lists"], expr_lists, lambda x, y: x + "|" + y)
 
-def data_dump(dict, f = lambda x: x):
-    return '\n'.join("{}={}".format(i, f(j)) for (i, j) in dict.items())
+def data_dump(dic, f = lambda x: x):
+    return '\n'.join("{}={}".format(i, f(j)) for (i, j) in dic.items())
 
 def process(directory="."):
     print("ResEl Documentation Processor\n-----------------------------")
@@ -84,7 +84,15 @@ def process(directory="."):
         project_conf = {"import": set(), "vars": {}, "lists": {}, "expr_lists": {}}
         project_dir = os.path.join(".docs", project)
         docs_dir = os.path.join(project_dir, ".docs")
+        build_dir = os.path.join(project_dir, ".build")
         os.makedirs(docs_dir)
+        print("Acquiring documentation repo...")
+        build_repo = Repo.clone_from(remote.format(get_field("repo", conf[project])), build_dir)
+        print("Done.")
+        try:
+            build_repo.git.rm("-rf", "*")
+        except Exception as e:
+            print("Error encountered while removing files: {}".format(e))
 
         version = get_field("version", conf[project])
         data = {"project": project, "version": version, "release": get_field("release", conf[project], version), "copyright": get_field("copyright", conf[project])}
@@ -92,7 +100,7 @@ def process(directory="."):
 
         get_resources(conf[project]["docs"], docs_dir)
 
-        for section in conf[project]["code"]:
+        for section in get_field("code", conf[project], []):
             print("|-* Section {} found".format(section))
             get_resources(conf[project]["code"][section], os.path.join(project_dir, section))
             for i in get_field("templates", conf[project]["code"][section], [], auto_list):
@@ -120,3 +128,6 @@ def process(directory="."):
             rc = build.main([".", os.path.join("..", ".build", locale), "-D", "language={}".format(locale)])
             if rc:
                 sys.exit(rc)
+        build_repo.git.add("*")
+        build_repo.git.commit("-m", "Automatic Vizir modification")
+        build_repo.git.push()
