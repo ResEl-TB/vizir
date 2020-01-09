@@ -2,7 +2,10 @@
 {{ imports }}
 import sys
 
-source_suffix = '.rst'
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 master_doc = 'index'
 project = {{ project }}
 copyright = {{ copyright }}
