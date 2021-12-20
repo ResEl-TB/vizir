@@ -1,44 +1,31 @@
 FROM docker.resel.fr/resel/docker/alpine-resel
-MAINTAINER nicolas.vuillermet@imt-atlantique.net
+MAINTAINER Benjamin Somers <bsomers@resel.fr>
 
-RUN apk add --no-cache openssh nodejs npm
+ARG PRIVATE_KEY
 
+RUN apk add --no-cache openssh nodejs npm python3 py3-pip
 RUN npm install -g jsdoc
+RUN pip3 install GitPython Jinja2 PyYAML Sphinx sphinx-js recommonmark sphinx_rtd_theme python-gitlab
 
-RUN echo "**** install Python ****" && \
-    apk add --no-cache python3 && \
-    if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi && \
-    \
-    echo "**** install pip ****" && \
-    python3 -m ensurepip && \
-    rm -r /usr/lib/python*/ensurepip && \
-    pip3 install --no-cache --upgrade pip setuptools wheel && \
-    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
+RUN mkdir -p /srv/vizir/
+COPY app /srv/vizir/
 
-RUN pip3 install GitPython Jinja2 PyYAML Sphinx sphinx-js recommonmark sphinx_rtd_theme
-
-RUN mkdir -p /srv/bin/
-
-COPY vizir/bin /srv/bin/
-
-RUN chmod +x /srv/bin/vizir
-
+RUN chmod +x /srv/vizir/vizir
 RUN mkdir -p ~/.ssh/
-
-COPY PRIVATE_KEY /root/.ssh/git.priv
-
-RUN ssh-keyscan -p 43000 git.resel.fr >> ~/.ssh/known_hosts && \
-    echo "host git.resel.fr" > ~/.ssh/config && \
-    echo "  HostName git.resel.fr" >> ~/.ssh/config && \
-    echo "  IdentityFile /root/.ssh/git.priv" >> ~/.ssh/config && \
-    echo "  User git" >>  ~/.ssh/config
-    
+RUN echo "$PRIVATE_KEY" > /root/.ssh/git.priv
 RUN chmod 0600 ~/.ssh/git.priv
 
-RUN git config --global user.email "vizir@resel.fr" && \
-    git config --global user.name "Vizir Runner"
+RUN ssh-keyscan -p 43000 git.resel.fr >> ~/.ssh/known_hosts
+RUN echo -e '\
+host git.resel.fr\n\
+    HostName git.resel.fr\n\
+    IdentityFile /root/.ssh/git.priv\n\
+    User git\n\
+' >> ~/.ssh/config
 
-	
-ENV PATH="/srv/bin:${PATH}"
+RUN git config --global user.email vizir@resel.fr
+RUN git config --global user.name Vizir
+
+ENV PATH="/srv/vizir:${PATH}"
 
 ENTRYPOINT []
