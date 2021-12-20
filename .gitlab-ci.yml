@@ -1,15 +1,18 @@
 ---
 
 image: docker:stable
+
 variables:
   DOCKER_DRIVER: overlay2
   PRIVATE_KEY: $PRIVATE_KEY
+
 stages:
   - build
   - push
 
 services:
-- $RUNNER_IMAGE
+- name: $RUNNER_IMAGE
+  alias: docker
 
 Build docker image:
   stage: build

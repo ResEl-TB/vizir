@@ -5,7 +5,7 @@ ARG PRIVATE_KEY
 
 RUN apk add --no-cache openssh nodejs npm python3 py3-pip
 RUN npm install -g jsdoc
-RUN pip3 install GitPython Jinja2 PyYAML Sphinx sphinx-js recommonmark sphinx_rtd_theme python-gitlab
+RUN pip3 install GitPython Jinja2==2.11.3 PyYAML Sphinx sphinx-js recommonmark sphinx_rtd_theme python-gitlab termcolor
 
 RUN mkdir -p /srv/vizir/
 COPY app /srv/vizir/
