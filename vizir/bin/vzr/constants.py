@@ -1,7 +1,7 @@
 """This module provides the constants for Vizir"""
 
 
-from .yava.primitives import is_str
+from .yava.primitives import is_str, is_str_or_number
 
 
 FILES_POLICY = {'_error':   {'@'},
@@ -26,9 +26,9 @@ POLICIES = {'*': {'_error':    {'@', 'repo', 'version'},
                                 'from': is_str
                                },
                   'locales':   [is_str],
-                  'release':   is_str,
+                  'release':   is_str_or_number,
                   'repo':      is_str,
-                  'version':   is_str
+                  'version':   is_str_or_number
                  }
            }
 

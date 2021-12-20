@@ -234,9 +234,9 @@ def process_project(project, directory, conf, templates_template, conf_template)
     with Section(f'Project {project}'):
         build_repo = acquire_build_repository(project, get_field('repo', conf), gitlab, build_dir)
 
-        version = get_field('version', conf)
+        version = get_field('version', conf, transform=str)
         data = {'project': project, 'version': version, 'copyright': get_field('copyright', conf),
-                'release': get_field('release', conf, version)}
+                'release': get_field('release', conf, version, str)}
         data = {key: repr(val) for (key, val) in data.items()}
 
         get_resources(get_field('docs', conf, {'files': {'plus': '*', 'to': '.'}}), docs_dir)
