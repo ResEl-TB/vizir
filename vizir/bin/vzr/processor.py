@@ -7,12 +7,13 @@ import hashlib
 from distutils import dir_util, file_util
 
 import yaml
-from git import Repo, GitCommandError
+from git import GitCommandError, Repo
+from gitlab import Gitlab, GitlabGetError
 from jinja2 import Environment, FileSystemLoader
 from sphinx.cmd import build
 
-from .constants import REMOTE
-from .util import err, header, Step, mag, warn, Section
+from .constants import ENDPOINT, PRIVATE_TOKEN, REMOTE
+from .util import err, header, mag, warn, Section, Step
 
 
 def get_field(field, dic, default = "", transform = lambda x: x):
@@ -155,6 +156,63 @@ def build_sphinx_config(data, project_conf, docs_dir, conf_template):
             file.write(conf_template.render(data))
 
 
+def touch_project(project_name, repo_path, gitlab):
+    """
+    Touches a project
+    :param project_name: The project name
+    :param repo_path: The project path
+    :param gitlab: The Gitlab object
+    """
+    try:
+        gitlab.projects.get(repo_path)
+    except GitlabGetError:
+        create_project(project_name, repo_path.split('/'), gitlab)
+
+
+def get_group(group_path_parts, gitlab):
+    """
+    Get a group ID from a path. If the group or its parents don't exist, create them.
+    :param group_path_parts: The path parts
+    :param gitlab: The Gitlab object
+    """
+    try:
+        return gitlab.groups.get('/'.join(group_path_parts))
+    except GitlabGetError:
+        group = get_group(group_path_parts[:-1], gitlab)
+        name = group_path_parts[-1]
+        return gitlab.groups.create({'name': name, 'path': name, 'parent_id': group.id})
+
+
+def create_project(project_name, project_path_parts, gitlab):
+    """
+    Create a GitLab project
+    :param project_name: The project name
+    :param project_path_parts: The path parts
+    :param gitlab: The Gitlab object
+    """
+    group = get_group(project_path_parts[:-1], gitlab)
+    gitlab.projects.create({'name': project_name, 'path': project_path_parts[-1],
+                            'namespace_id': group.id})
+
+
+def acquire_build_repository(project, repo_path, gitlab, build_dir):
+    """
+    Acquire the output repository
+    :param project: The project name
+    :param repo_path: The repository path
+    :param gitlab: The Gitlab object
+    :build_dir: The output directory
+    """
+    with Step(f'Acquiring {mag("target")} repository'):
+        touch_project(project, repo_path, gitlab)
+        build_repo = Repo.clone_from(REMOTE.format(repo_path), build_dir)
+        try:
+            build_repo.git.rm('-rf', '*')
+        except GitCommandError as e:
+            warn(f'Exception GitCommandError raised: {e}')
+        return build_repo
+
+
 def process_project(project, directory, conf, templates_template, conf_template):
     """
     Process a Vizir project
@@ -170,13 +228,11 @@ def process_project(project, directory, conf, templates_template, conf_template)
     build_dir = os.path.join(project_dir, '.build')
     os.makedirs(docs_dir)
 
+    gitlab = Gitlab(f'https://{ENDPOINT}', private_token=PRIVATE_TOKEN)
+    gitlab.auth()
+
     with Section(f'Project {project}'):
-        with Step(f'Acquiring {mag("target")} repository'):
-            build_repo = Repo.clone_from(REMOTE.format(get_field('repo', conf)), build_dir)
-            try:
-                build_repo.git.rm('-rf', '*')
-            except GitCommandError as e:
-                warn(f'Exception GitCommandError raised: {e}')
+        build_repo = acquire_build_repository(project, get_field('repo', conf), gitlab, build_dir)
 
         version = get_field('version', conf)
         data = {'project': project, 'version': version, 'copyright': get_field('copyright', conf),
