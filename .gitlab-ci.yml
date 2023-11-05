@@ -4,7 +4,6 @@ image: docker:stable
 
 variables:
   DOCKER_DRIVER: overlay2
-  PRIVATE_KEY: $PRIVATE_KEY
 
 stages:
   - build
@@ -19,12 +18,12 @@ Build docker image:
   before_script: &before_script
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build --build-arg PRIVATE_KEY="$PRIVATE_KEY" --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - cp $PRIVATE_KEY git.priv
+    - docker build --build-arg PRIVATE_TOKEN="$PRIVATE_TOKEN" --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
   tags:
     - admin
 
-#--build-arg PRIVATE_CERT=$PRIVATE_KEY 
 Push image:
   stage: push
   before_script: *before_script

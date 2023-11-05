@@ -34,4 +34,4 @@ POLICIES = {'*': {'_error':    {'@', 'repo', 'version'},
 
 ENDPOINT = 'git.resel.fr'
 REMOTE = f'ssh://{ENDPOINT}:43000/{{}}'
-PRIVATE_TOKEN = 'glpat-sp9wNGeB619c4CdycGPv'
+PRIVATE_TOKEN = '$PRIVATE_TOKEN'
